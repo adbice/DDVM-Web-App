@@ -1,111 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monument Mapper</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen p-4">
-    <div class="max-w-md mx-auto">
-        <h1 class="text-2xl font-bold text-center mb-6">Monument Mapper</h1>
-        
-        <input type="text" id="searchInput" placeholder="Search Inscription..." 
-               class="w-full p-4 rounded-lg shadow-md mb-4 border-2 border-blue-500 focus:outline-none">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1A1A1A" />
+    <meta name="description" content="DDVM Monument Mapper — Field inventory PWA for memorial pavers" />
 
-        <div id="results" class="space-y-3">
-            <p class="text-center text-gray-500">Loading 2,700 pavers...</p>
-        </div>
-    </div>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h2 id="modalTitle" class="text-xl font-bold mb-2"></h2>
-            <p id="modalID" class="text-sm text-gray-500 mb-4"></p>
-            
-            <label class="block font-semibold mb-2">Style</label>
-            <div class="flex gap-2 mb-4">
-                <button onclick="selectStyle('Black')" id="btnBlack" class="flex-1 py-3 rounded-lg border-2 border-gray-300">Black</button>
-                <button onclick="selectStyle('Brick')" id="btnBrick" class="flex-1 py-3 rounded-lg border-2 border-gray-300">Brick</button>
-            </div>
-
-            <label class="block font-semibold mb-2">Size</label>
-            <div class="flex gap-2 mb-6">
-                <button onclick="selectSize('8x8')" id="btn8x8" class="flex-1 py-3 rounded-lg border-2 border-gray-300">8x8</button>
-                <button onclick="selectSize('4x8')" id="btn4x8" class="flex-1 py-3 rounded-lg border-2 border-gray-300">4x8</button>
-            </div>
-
-            <button onclick="sendUpdate()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg">SYNC TO SHEET</button>
-            <button onclick="closeModal()" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
-        </div>
-    </div>
-
-    <script>
-        const API_URL = https://script.google.com/macros/s/AKfycbzuiCllQhQSNti10jUhpYFXd1-k2ao18tH_g9GRaGbrOmvhXFdCKeoYdERRomHlxGuWrA/exec; // PASTE YOUR LINK HERE
-        let allBricks = [];
-        let selectedBrick = null;
-        let currentStyle = "";
-        let currentSize = "";
-
-        // 1. Fetch data from Google Sheet
-        async function loadData() {
-            const resp = await fetch(API_URL);
-            allBricks = await resp.json();
-            renderResults("");
-        }
-
-        // 2. Filter and Display
-        function renderResults(query) {
-            const container = document.getElementById('results');
-            const filtered = allBricks.filter(b => 
-                b.inscription.toLowerCase().includes(query.toLowerCase())
-            ).slice(0, 20); // Show top 20 matches for speed
-
-            container.innerHTML = filtered.map(b => `
-                <div onclick="openModal('${b.brickID}')" class="bg-white p-4 rounded-lg shadow cursor-pointer active:bg-blue-50">
-                    <div class="font-bold">${b.inscription || "[Empty Inscription]"}</div>
-                    <div class="text-sm text-gray-500">Section ${b.section} | Brick #${b.brickID}</div>
-                    <div class="mt-2 text-xs font-mono uppercase text-blue-600">${b.style || '?'} - ${b.size || '?'}</div>
-                </div>
-            `).join('');
-        }
-
-        // 3. Update Modal Logic
-        function openModal(id) {
-            selectedBrick = allBricks.find(b => b.brickID == id);
-            document.getElementById('modalTitle').innerText = selectedBrick.inscription;
-            document.getElementById('modalID').innerText = "Brick #" + selectedBrick.brickID;
-            currentStyle = selectedBrick.style;
-            currentSize = selectedBrick.size;
-            updateButtonUI();
-            document.getElementById('modal').classList.remove('hidden');
-        }
-
-        function selectStyle(s) { currentStyle = s; updateButtonUI(); }
-        function selectSize(s) { currentSize = s; updateButtonUI(); }
-
-        function updateButtonUI() {
-            document.getElementById('btnBlack').className = currentStyle === 'Black' ? 'flex-1 py-3 rounded-lg border-2 border-black bg-black text-white' : 'flex-1 py-3 rounded-lg border-2 border-gray-300';
-            document.getElementById('btnBrick').className = currentStyle === 'Brick' ? 'flex-1 py-3 rounded-lg border-2 border-red-700 bg-red-700 text-white' : 'flex-1 py-3 rounded-lg border-2 border-gray-300';
-            document.getElementById('btn8x8').className = currentSize === '8x8' ? 'flex-1 py-3 rounded-lg border-2 border-blue-600 bg-blue-600 text-white' : 'flex-1 py-3 rounded-lg border-2 border-gray-300';
-            document.getElementById('btn4x8').className = currentSize === '4x8' ? 'flex-1 py-3 rounded-lg border-2 border-blue-600 bg-blue-600 text-white' : 'flex-1 py-3 rounded-lg border-2 border-gray-300';
-        }
-
-        async function sendUpdate() {
-            const btn = event.target;
-            btn.innerText = "Syncing...";
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ brickID: selectedBrick.brickID, style: currentStyle, size: currentSize })
-            });
-            btn.innerText = "DONE!";
-            setTimeout(() => { location.reload(); }, 1000);
-        }
-
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-
-        document.getElementById('searchInput').addEventListener('input', e => renderResults(e.target.value));
-        loadData();
-    </script>
-</body>
+    <title>DDVM Monument Mapper</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
