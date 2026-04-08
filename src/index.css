@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #D4A843;
+  --stone: #2C2C2C;
+  --granite: #1A1A1A;
+  --cream: #F5F0E8;
+  --slate: #3D3D3D;
+}
+
+* {
+  box-sizing: border-box;
+  touch-action: manipulation; /* Critical for Samsung touch responsiveness */
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--granite);
+  color: var(--cream);
+  font-family: 'Georgia', serif;
+  padding-bottom: 80px;
+  overscroll-behavior: none; /* Prevents pull-to-refresh interfering in field */
+}
+
+/* Prevent text selection on buttons during field use */
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling for section nav */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
