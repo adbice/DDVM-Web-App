@@ -3,20 +3,22 @@ import Header from './components/Header.jsx'
 import BrickCard from './components/BrickCard.jsx'
 import EntryModal from './components/EntryModal.jsx'
 import SectionMap from './components/SectionMap.jsx'
+import CalibrationPanel from './components/CalibrationPanel.jsx'
 import { getAllBricks, savePaver, signIn, isSignedIn } from './services/SheetsService.js'
 
 export default function App() {
-  const [inventory, setInventory]         = useState([])
-  const [filtered, setFiltered]           = useState([])
-  const [activeSection, setActiveSection] = useState('Section 1')
-  const [searchQuery, setSearchQuery]     = useState('')
-  const [selectedBrick, setSelectedBrick] = useState(null)
-  const [modalOpen, setModalOpen]         = useState(false)
-  const [isNewPaver, setIsNewPaver]       = useState(false)
-  const [loadStatus, setLoadStatus]       = useState('Not signed in')
-  const [authed, setAuthed]               = useState(false)
-  const [viewMode, setViewMode]           = useState('list') // 'list' | 'map'
-  const [pendingCount, setPendingCount]   = useState(0)
+  const [inventory, setInventory]             = useState([])
+  const [filtered, setFiltered]               = useState([])
+  const [activeSection, setActiveSection]     = useState('Section 1')
+  const [searchQuery, setSearchQuery]         = useState('')
+  const [selectedBrick, setSelectedBrick]     = useState(null)
+  const [modalOpen, setModalOpen]             = useState(false)
+  const [isNewPaver, setIsNewPaver]           = useState(false)
+  const [loadStatus, setLoadStatus]           = useState('Not signed in')
+  const [authed, setAuthed]                   = useState(false)
+  const [viewMode, setViewMode]               = useState('list')
+  const [pendingCount, setPendingCount]       = useState(0)
+  const [showCalibration, setShowCalibration] = useState(false)
 
   const SECTIONS = [
     'Section 1', 'Section 2', 'Section 3', 'Section 4',
@@ -92,7 +94,7 @@ export default function App() {
 
   const showNewButton = searchQuery.length > 1 && filtered.length === 0
 
-  // Sign in screen
+  // ─── Sign in screen ───────────────────────────────────────────────────────
   if (!authed) {
     return (
       <div style={{
@@ -136,6 +138,7 @@ export default function App() {
     )
   }
 
+  // ─── Main app ─────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#1A1A1A', color: '#F5F0E8', fontFamily: 'Georgia, serif' }}>
 
@@ -149,12 +152,13 @@ export default function App() {
         pendingCount={pendingCount}
       />
 
-      {/* View mode toggle */}
+      {/* View mode toggle + action buttons */}
       <div style={{
         display: 'flex',
         gap: '8px',
-        padding: '12px 16px 0',
-        borderBottom: '1px solid #2C2C2C'
+        padding: '12px 16px 12px',
+        borderBottom: '1px solid #2C2C2C',
+        alignItems: 'center'
       }}>
         <ViewToggleBtn
           label="☰ List"
@@ -180,6 +184,20 @@ export default function App() {
           }}
         >
           ↻ Refresh
+        </button>
+        <button
+          onClick={() => setShowCalibration(true)}
+          style={{
+            background: 'transparent',
+            border: '1px solid #444',
+            color: '#888',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            fontSize: '12px',
+            cursor: 'pointer'
+          }}
+        >
+          📍 Calibrate
         </button>
       </div>
 
@@ -248,6 +266,7 @@ export default function App() {
         />
       )}
 
+      {/* MODALS */}
       {modalOpen && (
         <EntryModal
           brick={selectedBrick}
@@ -256,6 +275,11 @@ export default function App() {
           onClose={() => setModalOpen(false)}
         />
       )}
+
+      {showCalibration && (
+        <CalibrationPanel onClose={() => setShowCalibration(false)} />
+      )}
+
     </div>
   )
 }
