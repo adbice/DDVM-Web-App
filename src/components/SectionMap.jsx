@@ -2,17 +2,6 @@ import { useState, useEffect } from 'react'
 
 /**
  * SectionMap.jsx
- * Visual grid map of pavers for a given section.
- * Tapping a paver cell opens the edit modal.
- *
- * Grid layout per section:
- *   Sec 4: cols M-AB, rows 29-52 (L to R, top to bottom)
- *   Sec 2: cols AC-AX, rows 29-52
- *   Sec 1: cols BO-CJ, rows 29-52 (R to L)
- *   Sec 3: cols CK-CZ, rows 29-52 (R to L)
- *   Sec 6: cols B-F (left wall, full length)
- *   Sec 5: cols DG-DK (right wall, full length)
- *   Sec 7 & 8: bay end
  */
 
 const SECTION_GRIDS = {
