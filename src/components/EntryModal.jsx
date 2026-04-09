@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import ValidationService from '../services/ValidationService.js'
 
-export default function EntryModal({ brick, isNew, onSave, onClose }) {
+export default function EntryModal({ brick, onSave, onClose }) {
   const [inscription, setInscription] = useState(brick.inscription || '')
   const [style, setStyle]             = useState(brick.style || '')
   const [size, setSize]               = useState(brick.size || '')
@@ -33,12 +33,7 @@ export default function EntryModal({ brick, isNew, onSave, onClose }) {
     if (!validate()) return
     setSaving(true)
     try {
-      await onSave({
-        ...brick,
-        inscription,
-        style,
-        size
-      })
+      await onSave({ ...brick, inscription, style, size })
     } catch (err) {
       setErrors([err.message])
       setSaving(false)
@@ -47,121 +42,145 @@ export default function EntryModal({ brick, isNew, onSave, onClose }) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-70 z-40"
         onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.7)', zIndex: 40
+        }}
       />
 
-      {/* Modal panel — slides up from bottom, Samsung thumb-friendly */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-6"
-        style={{ background: 'var(--stone)', borderTop: '4px solid var(--gold)' }}
-      >
-        {/* Title */}
-        <h2 className="text-xl font-bold text-white mb-1">
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+        background: 'var(--stone)',
+        borderTop: '4px solid var(--gold)',
+        borderRadius: '24px 24px 0 0',
+        padding: '24px'
+      }}>
+        <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 'bold', margin: '0 0 4px' }}>
           {inscription || '[Empty Paver]'}
         </h2>
-        <p className="text-yellow-400 font-mono text-sm mb-6">
-          {isNew ? '➕ New Entry · ' : 'Editing · '}
+        <p style={{ color: '#D4A843', fontFamily: 'monospace', fontSize: '0.85rem', margin: '0 0 24px' }}>
           {brick.section} · ID {brick.brickID}
         </p>
 
-        {/* Inscription input */}
-        <label className="text-xs uppercase text-gray-400 mb-2 block">
-          Inscription
-        </label>
+        <label style={labelStyle}>Inscription</label>
         <input
           type="text"
           value={inscription}
           onChange={e => setInscription(e.target.value.toUpperCase())}
           placeholder="Name on paver..."
-          className="w-full px-4 py-3 rounded-xl text-white mb-5"
-          style={{
-            background: '#111',
-            border: '2px solid var(--gold)',
-            fontSize: '16px' // Prevents Samsung auto-zoom
-          }}
           autoCapitalize="characters"
           autoCorrect="off"
+          style={{
+            width: '100%', padding: '12px 16px',
+            background: '#111', border: '2px solid var(--gold)',
+            borderRadius: '12px', color: '#fff',
+            fontSize: '16px', marginBottom: '20px',
+            boxSizing: 'border-box'
+          }}
         />
 
-        {/* Style selection */}
-        <label className="text-xs uppercase text-gray-400 mb-2 block">
-          Style
-        </label>
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <label style={labelStyle}>Style</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
           {['Black', 'Brick'].map(s => (
             <button
               key={s}
               onClick={() => setStyle(s)}
-              className={`py-5 rounded-2xl font-bold text-lg transition-all ${
-                style === s
-                  ? 'border-2 border-gold text-gold bg-black'
-                  : 'border-2 border-gray-600 text-gray-500 bg-transparent'
-              }`}
+              style={{
+                padding: '20px',
+                borderRadius: '16px',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                cursor: 'pointer',
+                background: style === s ? '#000' : 'transparent',
+                border: `2px solid ${style === s ? 'var(--gold)' : '#555'}`,
+                color: style === s ? 'var(--gold)' : '#666'
+              }}
             >
               {s === 'Black' ? '⬛ BLACK' : '🧱 BRICK'}
             </button>
           ))}
         </div>
 
-        {/* Size selection */}
-        <label className="text-xs uppercase text-gray-400 mb-2 block">
-          Size
-        </label>
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <label style={labelStyle}>Size</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
           {['8x8', '4x8'].map(z => (
             <button
               key={z}
               onClick={() => setSize(z)}
-              className={`py-5 rounded-2xl font-bold text-lg transition-all ${
-                size === z
-                  ? 'border-2 border-blue-400 text-blue-300 bg-blue-950'
-                  : 'border-2 border-gray-600 text-gray-500 bg-transparent'
-              }`}
+              style={{
+                padding: '20px',
+                borderRadius: '16px',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                cursor: 'pointer',
+                background: size === z ? '#0d2e4d' : 'transparent',
+                border: `2px solid ${size === z ? '#4A9EFF' : '#555'}`,
+                color: size === z ? '#90C8FF' : '#666'
+              }}
             >
               {z === '8x8' ? '8 × 8' : '4 × 8'}
             </button>
           ))}
         </div>
 
-        {/* Errors */}
         {errors.length > 0 && (
-          <div className="bg-red-950 border border-red-500 rounded-xl p-3 mb-4">
+          <div style={{
+            background: '#2d0000', border: '1px solid #9e4a4a',
+            borderRadius: '12px', padding: '12px', marginBottom: '16px'
+          }}>
             {errors.map((e, i) => (
-              <p key={i} className="text-red-300 text-sm">{e}</p>
+              <p key={i} style={{ color: '#e07070', fontSize: '0.85rem', margin: 0 }}>{e}</p>
             ))}
           </div>
         )}
 
-        {/* Warnings */}
         {warnings.length > 0 && (
-          <div className="bg-yellow-950 border border-yellow-500 rounded-xl p-3 mb-4">
+          <div style={{
+            background: '#2d2000', border: '1px solid #9e7a00',
+            borderRadius: '12px', padding: '12px', marginBottom: '16px'
+          }}>
             {warnings.map((w, i) => (
-              <p key={i} className="text-yellow-300 text-sm">{w}</p>
+              <p key={i} style={{ color: '#e0c070', fontSize: '0.85rem', margin: 0 }}>{w}</p>
             ))}
           </div>
         )}
 
-        {/* Save button */}
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-5 rounded-2xl font-black text-xl text-stone mb-3"
-          style={{ background: saving ? '#888' : 'var(--gold)' }}
+          style={{
+            width: '100%', padding: '20px',
+            background: saving ? '#888' : 'var(--gold)',
+            color: '#1A1A1A', border: 'none',
+            borderRadius: '16px', fontSize: '1.2rem',
+            fontWeight: 'bold', cursor: saving ? 'not-allowed' : 'pointer',
+            marginBottom: '12px'
+          }}
         >
           {saving ? 'Saving...' : 'CONFIRM & SAVE'}
         </button>
 
-        {/* Cancel */}
         <button
           onClick={onClose}
-          className="w-full py-3 text-gray-500 text-sm"
+          style={{
+            width: '100%', padding: '12px',
+            background: 'transparent', border: 'none',
+            color: '#666', fontSize: '0.9rem', cursor: 'pointer'
+          }}
         >
           Cancel
         </button>
       </div>
     </>
   )
+}
+
+const labelStyle = {
+  display: 'block',
+  color: '#888',
+  fontSize: '0.75rem',
+  textTransform: 'uppercase',
+  marginBottom: '8px'
 }
