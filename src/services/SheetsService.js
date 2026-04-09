@@ -1,15 +1,9 @@
-/**
- * SheetsService.js
- * Handles all Google Sheets API read/write operations.
- * One-Write, Dual-Destination: every save goes to Master Inventory
- * AND the section-specific tab simultaneously.
- */
-
 const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID
 
-// Column order matches your existing sheet exactly:
-// A=Section, B=Brick#, C=Location, D=PaverPresent,
-// E=Condition, F=Inscription, G=Notes, H=Style, I=Size
+const TOKEN_KEY = 'ddvm_access_token'
+const TOKEN_EXPIRY_KEY = 'ddvm_token_expiry'
+
+let accessToken = localStorage.getItem(TOKEN_KEY) || null
 
 function recordToRow(record) {
   return [
@@ -30,23 +24,16 @@ function getSectionTabName(section) {
   return `${section} Map`
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH — Google OAuth2 token management
-// ─────────────────────────────────────────────────────────────────────────────
-
-let accessToken = null
-
 export async function signIn() {
   return new Promise((resolve, reject) => {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/spreadsheets',
       callback: (response) => {
-        if (response.error) {
-          reject(response.error)
-          return
-        }
+        if (response.error) { reject(response.error); return }
         accessToken = response.access_token
+        localStorage.setItem(TOKEN_KEY, accessToken)
+        localStorage.setItem(TOKEN_EXPIRY_KEY, Date.now() + (3600 * 1000))
         resolve(accessToken)
       }
     })
@@ -55,17 +42,20 @@ export async function signIn() {
 }
 
 export function isSignedIn() {
+  const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY)
+  if (!expiry || Date.now() > parseInt(expiry)) {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(TOKEN_EXPIRY_KEY)
+    accessToken = null
+    return false
+  }
   return !!accessToken
 }
 
 async function getToken() {
-  if (!accessToken) await signIn()
+  if (!accessToken || !isSignedIn()) await signIn()
   return accessToken
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// READ — Load inventory for a section
-// ─────────────────────────────────────────────────────────────────────────────
 
 export async function getAllBricks(section) {
   const tabName = section === 'POW/MIA Section'
@@ -86,9 +76,8 @@ export async function getAllBricks(section) {
   const rows = data.values || []
 
   if (rows.length <= 1) return []
-  rows.shift() // Remove header row
+  rows.shift()
 
-  // Filter to just the requested section
   return rows
     .filter(row => row[0] === section)
     .map(row => ({
@@ -101,13 +90,8 @@ export async function getAllBricks(section) {
     }))
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WRITE — Save a paver (new or updated)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export async function savePaver(record, isNew) {
   const token = await getToken()
-
   if (isNew) {
     await appendRow('Creating a New Inventory Sheet', recordToRow(record), token)
   } else {
@@ -137,7 +121,6 @@ async function appendRow(sheetName, row, token) {
 }
 
 async function updateRow(record, token) {
-  // First find the row number by reading Section + BrickID columns
   const range = encodeURIComponent(`Creating a New Inventory Sheet!A:B`)
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}`
 
@@ -148,18 +131,16 @@ async function updateRow(record, token) {
   const data = await res.json()
   const rows = data.values || []
 
-  // Find matching row
   let rowIndex = -1
   for (let i = 0; i < rows.length; i++) {
     if (rows[i][0] === record.section && String(rows[i][1]) === String(record.brickID)) {
-      rowIndex = i + 1 // Sheets rows are 1-indexed
+      rowIndex = i + 1
       break
     }
   }
 
   if (rowIndex === -1) throw new Error(`Brick ID ${record.brickID} not found in ${record.section}`)
 
-  // Update columns F, H, I (inscription, style, size) and D (paver present)
   const updateRange = encodeURIComponent(`Creating a New Inventory Sheet!D${rowIndex}:I${rowIndex}`)
   const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${updateRange}?valueInputOption=USER_ENTERED`
 
@@ -171,12 +152,12 @@ async function updateRow(record, token) {
     },
     body: JSON.stringify({
       values: [[
-        'Y',                   // D - Paver Present
-        record.condition || '', // E
-        record.inscription,    // F
-        record.notes || '',    // G
-        record.style,          // H
-        record.size            // I
+        'Y',
+        record.condition || '',
+        record.inscription,
+        record.notes || '',
+        record.style,
+        record.size
       ]]
     })
   })
