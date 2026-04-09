@@ -1,5 +1,4 @@
 const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID
-
 const TOKEN_KEY = 'ddvm_access_token'
 const TOKEN_EXPIRY_KEY = 'ddvm_token_expiry'
 
@@ -17,11 +16,6 @@ function recordToRow(record) {
     record.style,
     record.size
   ]
-}
-
-function getSectionTabName(section) {
-  if (section === 'POW/MIA Section') return 'POWMIA Section'
-  return `${section} Map`
 }
 
 export async function signIn() {
@@ -66,15 +60,12 @@ export async function getAllBricks(section) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}`
 
   const token = await getToken()
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
 
   if (!res.ok) throw new Error(`Failed to load: ${res.statusText}`)
 
   const data = await res.json()
   const rows = data.values || []
-
   if (rows.length <= 1) return []
   rows.shift()
 
@@ -90,12 +81,11 @@ export async function getAllBricks(section) {
     }))
 }
 
-export async function savePaver(record, isNew) {
+export async function savePaver(record) {
   const token = await getToken()
-  if (isNew) {
+  const result = await updateRow(record, token)
+  if (result === 'notfound') {
     await appendRow('Creating a New Inventory Sheet', recordToRow(record), token)
-  } else {
-    await updateRow(record, token)
   }
 }
 
@@ -105,10 +95,7 @@ async function appendRow(sheetName, row, token) {
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ values: [row] })
   })
 
@@ -116,7 +103,6 @@ async function appendRow(sheetName, row, token) {
     const err = await res.json()
     throw new Error(err.error?.message || `Write failed on ${sheetName}`)
   }
-
   return res.json()
 }
 
@@ -124,10 +110,7 @@ async function updateRow(record, token) {
   const range = encodeURIComponent(`Creating a New Inventory Sheet!A:B`)
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}`
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   const data = await res.json()
   const rows = data.values || []
 
@@ -139,17 +122,14 @@ async function updateRow(record, token) {
     }
   }
 
-  if (rowIndex === -1) throw new Error(`Brick ID ${record.brickID} not found in ${record.section}`)
+  if (rowIndex === -1) return 'notfound'
 
   const updateRange = encodeURIComponent(`Creating a New Inventory Sheet!D${rowIndex}:I${rowIndex}`)
   const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${updateRange}?valueInputOption=USER_ENTERED`
 
   const updateRes = await fetch(updateUrl, {
     method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       values: [[
         'Y',
@@ -166,6 +146,5 @@ async function updateRow(record, token) {
     const err = await updateRes.json()
     throw new Error(err.error?.message || 'Update failed')
   }
-
   return updateRes.json()
 }
