@@ -15,7 +15,7 @@ export default function App() {
   const [modalOpen, setModalOpen]             = useState(false)
   const [isNewPaver, setIsNewPaver]           = useState(false)
   const [loadStatus, setLoadStatus]           = useState('Not signed in')
-  const [authed, setAuthed]                   = useState(false)
+  const [authed, setAuthed]                   = useState(isSignedIn())
   const [viewMode, setViewMode]               = useState('list')
   const [pendingCount, setPendingCount]       = useState(0)
   const [showCalibration, setShowCalibration] = useState(false)
