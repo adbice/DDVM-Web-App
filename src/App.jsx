@@ -13,7 +13,6 @@ export default function App() {
   const [searchQuery, setSearchQuery]         = useState('')
   const [selectedBrick, setSelectedBrick]     = useState(null)
   const [modalOpen, setModalOpen]             = useState(false)
-  const [isNewPaver, setIsNewPaver]           = useState(false)
   const [loadStatus, setLoadStatus]           = useState('Not signed in')
   const [authed, setAuthed]                   = useState(isSignedIn())
   const [viewMode, setViewMode]               = useState('list')
@@ -64,27 +63,12 @@ export default function App() {
 
   function handleCardTap(brick) {
     setSelectedBrick(brick)
-    setIsNewPaver(false)
-    setModalOpen(true)
-  }
-
-  function handleNewPaver() {
-    const id = prompt('Enter Brick ID #:')
-    if (!id) return
-    setSelectedBrick({
-      brickID: id,
-      section: activeSection,
-      inscription: searchQuery.toUpperCase(),
-      style: '',
-      size: ''
-    })
-    setIsNewPaver(true)
     setModalOpen(true)
   }
 
   async function handleSave(record) {
     try {
-      await savePaver(record, isNewPaver)
+      await savePaver(record)
       setModalOpen(false)
       loadInventory()
     } catch (err) {
@@ -94,7 +78,6 @@ export default function App() {
 
   const showNewButton = searchQuery.length > 1 && filtered.length === 0
 
-  // ─── Sign in screen ───────────────────────────────────────────────────────
   if (!authed) {
     return (
       <div style={{
@@ -138,7 +121,6 @@ export default function App() {
     )
   }
 
-  // ─── Main app ─────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#1A1A1A', color: '#F5F0E8', fontFamily: 'Georgia, serif' }}>
 
@@ -152,62 +134,37 @@ export default function App() {
         pendingCount={pendingCount}
       />
 
-      {/* View mode toggle + action buttons */}
       <div style={{
         display: 'flex',
         gap: '8px',
-        padding: '12px 16px 12px',
+        padding: '12px 16px',
         borderBottom: '1px solid #2C2C2C',
         alignItems: 'center'
       }}>
-        <ViewToggleBtn
-          label="☰ List"
-          active={viewMode === 'list'}
-          onClick={() => setViewMode('list')}
-        />
-        <ViewToggleBtn
-          label="⊞ Map"
-          active={viewMode === 'map'}
-          onClick={() => setViewMode('map')}
-        />
+        <ViewToggleBtn label="☰ List" active={viewMode === 'list'} onClick={() => setViewMode('list')} />
+        <ViewToggleBtn label="⊞ Map"  active={viewMode === 'map'}  onClick={() => setViewMode('map')} />
         <div style={{ flex: 1 }} />
-        <button
-          onClick={loadInventory}
-          style={{
-            background: 'transparent',
-            border: '1px solid #444',
-            color: '#888',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }}
-        >
-          ↻ Refresh
-        </button>
-        <button
-          onClick={() => setShowCalibration(true)}
-          style={{
-            background: 'transparent',
-            border: '1px solid #444',
-            color: '#888',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }}
-        >
-          📍 Calibrate
-        </button>
+        <button onClick={loadInventory} style={actionBtnStyle}>↻ Refresh</button>
+        <button onClick={() => setShowCalibration(true)} style={actionBtnStyle}>📍 Calibrate</button>
       </div>
 
-      {/* LIST VIEW */}
       {viewMode === 'list' && (
         <div style={{ paddingTop: '8px' }}>
           {showNewButton && (
             <div style={{ padding: '16px' }}>
               <button
-                onClick={handleNewPaver}
+                onClick={() => {
+                  const id = prompt('Enter Brick ID #:')
+                  if (!id) return
+                  setSelectedBrick({
+                    brickID: id,
+                    section: activeSection,
+                    inscription: searchQuery.toUpperCase(),
+                    style: '',
+                    size: ''
+                  })
+                  setModalOpen(true)
+                }}
                 style={{
                   width: '100%',
                   padding: '24px',
@@ -234,30 +191,19 @@ export default function App() {
           ))}
 
           {filtered.length === 0 && !showNewButton && (
-            <div style={{
-              textAlign: 'center',
-              color: '#555',
-              marginTop: '80px',
-              fontSize: '1.1rem'
-            }}>
+            <div style={{ textAlign: 'center', color: '#555', marginTop: '80px', fontSize: '1.1rem' }}>
               No pavers logged in {activeSection}
             </div>
           )}
 
           {filtered.length > 20 && (
-            <div style={{
-              textAlign: 'center',
-              color: '#555',
-              padding: '16px',
-              fontSize: '0.9rem'
-            }}>
+            <div style={{ textAlign: 'center', color: '#555', padding: '16px', fontSize: '0.9rem' }}>
               Showing 20 of {filtered.length} — search to narrow results
             </div>
           )}
         </div>
       )}
 
-      {/* MAP VIEW */}
       {viewMode === 'map' && (
         <SectionMap
           section={activeSection}
@@ -266,11 +212,9 @@ export default function App() {
         />
       )}
 
-      {/* MODALS */}
       {modalOpen && (
         <EntryModal
           brick={selectedBrick}
-          isNew={isNewPaver}
           onSave={handleSave}
           onClose={() => setModalOpen(false)}
         />
@@ -282,6 +226,16 @@ export default function App() {
 
     </div>
   )
+}
+
+const actionBtnStyle = {
+  background: 'transparent',
+  border: '1px solid #444',
+  color: '#888',
+  borderRadius: '8px',
+  padding: '6px 12px',
+  fontSize: '12px',
+  cursor: 'pointer'
 }
 
 function ViewToggleBtn({ label, active, onClick }) {
