@@ -15,17 +15,16 @@ import { useState, useEffect } from 'react'
  *   Sec 7 & 8: bay end
  */
 
-// Section grid dimensions from the Map_Reference sheet
 const SECTION_GRIDS = {
-  'Section 1': { cols: 22, rows: 24, startID: 1,   direction: 'rtl' },
-  'Section 2': { cols: 22, rows: 24, startID: 1,   direction: 'ltr' },
-  'Section 3': { cols: 16, rows: 24, startID: 1,   direction: 'rtl' },
-  'Section 4': { cols: 16, rows: 24, startID: 1,   direction: 'ltr' },
-  'Section 5': { cols: 5,  rows: 48, startID: 1,   direction: 'ltr' },
-  'Section 6': { cols: 5,  rows: 48, startID: 1,   direction: 'ltr' },
-  'Section 7': { cols: 10, rows: 24, startID: 1,   direction: 'ltr' },
-  'Section 8': { cols: 10, rows: 24, startID: 1,   direction: 'ltr' },
-  'POW/MIA Section': { cols: 5, rows: 20, startID: 1, direction: 'ltr' },
+  'Section 1': { cols: 22, rows: 24, direction: 'rtl' },
+  'Section 2': { cols: 22, rows: 24, direction: 'ltr' },
+  'Section 3': { cols: 16, rows: 24, direction: 'rtl' },
+  'Section 4': { cols: 16, rows: 24, direction: 'ltr' },
+  'Section 5': { cols: 5,  rows: 48, direction: 'ltr' },
+  'Section 6': { cols: 5,  rows: 48, direction: 'ltr' },
+  'Section 7': { cols: 10, rows: 24, direction: 'ltr' },
+  'Section 8': { cols: 10, rows: 24, direction: 'ltr' },
+  'POW/MIA Section': { cols: 5, rows: 20, direction: 'ltr' },
 }
 
 function getPaverStatus(brick) {
@@ -36,9 +35,9 @@ function getPaverStatus(brick) {
 
 function getStatusColor(status) {
   switch (status) {
-    case 'filled':  return { background: '#2d4a2d', border: '1px solid #4a9e4a' } // green
-    case 'present': return { background: '#2d2d4a', border: '1px solid #4a4a9e' } // blue
-    case 'empty':   return { background: '#1a1a1a', border: '1px solid #333' }    // dark
+    case 'filled':  return { background: '#2d4a2d', border: '1px solid #4a9e4a' }
+    case 'present': return { background: '#2d2d4a', border: '1px solid #4a4a9e' }
+    case 'empty':   return { background: '#1a1a1a', border: '1px solid #333' }
     default:        return { background: '#1a1a1a', border: '1px solid #333' }
   }
 }
@@ -52,23 +51,26 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
   useEffect(() => {
     if (!config) return
 
-    // Build lookup map from brickID to inventory record
+    // Build lookup from brickID -> inventory record
+    // Normalize both section name and brickID for reliable matching
     const lookup = {}
     inventory.forEach(b => {
-      if (b.section === section) {
-        lookup[String(b.brickID)] = b
+      if (String(b.section).trim() === section) {
+        lookup[String(b.brickID).trim()] = b
       }
     })
 
-    // Build grid rows
     const rows = []
-    let id = config.startID
     let filled = 0, present = 0, empty = 0
+    const totalPavers = config.rows * config.cols
 
+    // Generate every slot from 1 to total regardless of whether
+    // it exists in the sheet yet — paver 1 is always top-left cell
     for (let row = 0; row < config.rows; row++) {
       const cells = []
       for (let col = 0; col < config.cols; col++) {
-        const brickID = String(id)
+        const slotNum = row * config.cols + col + 1
+        const brickID = String(slotNum)
         const brick = lookup[brickID] || null
         const status = getPaverStatus(brick)
 
@@ -77,19 +79,16 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
         else empty++
 
         cells.push({ brickID, brick, status })
-        id++
       }
 
-      // RTL sections count right to left — reverse the display row
-      if (config.direction === 'rtl') {
-        cells.reverse()
-      }
+      // RTL sections count right to left — reverse display row
+      if (config.direction === 'rtl') cells.reverse()
 
       rows.push(cells)
     }
 
     setGrid(rows)
-    setStats({ filled, present, empty, total: filled + present + empty })
+    setStats({ filled, present, empty, total: totalPavers })
   }, [section, inventory])
 
   if (!config) {
@@ -114,9 +113,9 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
         marginBottom: '12px',
         flexWrap: 'wrap'
       }}>
-        <StatBadge color="#4a9e4a" label="Logged" value={stats.filled} />
-        <StatBadge color="#4a4a9e" label="Present" value={stats.present} />
-        <StatBadge color="#555"    label="Empty"   value={stats.empty} />
+        <StatBadge color="#4a9e4a" label="Logged"   value={stats.filled} />
+        <StatBadge color="#4a4a9e" label="Present"  value={stats.present} />
+        <StatBadge color="#555"    label="Empty"    value={stats.empty} />
         <StatBadge color="#D4A843" label="Complete" value={`${fillPercent}%`} />
       </div>
 
@@ -137,7 +136,7 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
         }} />
       </div>
 
-      {/* Grid legend */}
+      {/* Legend */}
       <div style={{
         display: 'flex',
         gap: '16px',
@@ -147,10 +146,10 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
       }}>
         <span>🟩 Logged</span>
         <span>🟦 Present</span>
-        <span>⬛ Empty</span>
+        <span>⬛ Not logged</span>
       </div>
 
-      {/* Paver grid — horizontally scrollable */}
+      {/* Paver grid — horizontally scrollable for Samsung */}
       <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ display: 'inline-block', minWidth: 'fit-content' }}>
           {grid.map((row, rowIdx) => (
@@ -178,14 +177,14 @@ export default function SectionMap({ section, inventory, onPaverTap }) {
         </div>
       </div>
 
-      {/* Row count label */}
+      {/* Footer */}
       <div style={{
         marginTop: '12px',
         fontSize: '11px',
         color: '#555',
         textAlign: 'center'
       }}>
-        {config.rows} rows × {config.cols} cols · {stats.total} pavers
+        {config.rows} rows × {config.cols} cols · {stats.total} total pavers
       </div>
     </div>
   )
@@ -198,7 +197,7 @@ function PaverCell({ brickID, brick, status, onTap }) {
   return (
     <div
       onClick={onTap}
-      title={hasInscription ? `#${brickID}: ${brick.inscription}` : `#${brickID} — Empty`}
+      title={hasInscription ? `#${brickID}: ${brick.inscription}` : `#${brickID} — Not logged`}
       style={{
         width: '36px',
         height: '36px',
@@ -210,12 +209,11 @@ function PaverCell({ brickID, brick, status, onTap }) {
         cursor: 'pointer',
         flexShrink: 0,
         overflow: 'hidden',
-        ...colors,
-        // Tap feedback
         WebkitTapHighlightColor: 'rgba(212,168,67,0.3)',
+        ...colors,
       }}
     >
-      {/* Brick ID number */}
+      {/* Paver ID */}
       <div style={{
         fontSize: '8px',
         color: status === 'filled' ? '#4a9e4a' : '#555',
@@ -225,7 +223,7 @@ function PaverCell({ brickID, brick, status, onTap }) {
         {brickID}
       </div>
 
-      {/* Inscription initials if filled */}
+      {/* Inscription initials if logged */}
       {hasInscription && (
         <div style={{
           fontSize: '7px',
