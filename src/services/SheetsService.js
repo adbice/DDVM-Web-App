@@ -132,34 +132,7 @@ async function updateRow(record, token) {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       values: [[
-        record.location || '',  // C
-        'Y',                    // D
-        record.condition || '', // E
-        record.inscription,     // F
-        record.notes || '',     // G
-        record.style,           // H
-        record.size             // I
-      ]]
-    })
-  })
-
-  if (!updateRes.ok) {
-    const err = await updateRes.json()
-    throw new Error(err.error?.message || 'Update failed')
-  }
-  return updateRes.json()
-}
-
-  if (rowIndex === -1) return 'notfound'
-
-  const updateRange = encodeURIComponent(`Creating a New Inventory Sheet!D${rowIndex}:I${rowIndex}`)
-  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${updateRange}?valueInputOption=USER_ENTERED`
-
-  const updateRes = await fetch(updateUrl, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      values: [[
+        record.location || '',
         'Y',
         record.condition || '',
         record.inscription,
