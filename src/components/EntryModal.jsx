@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ValidationService from '../services/ValidationService.js'
+import { correctOCR } from '../services/OCRCorrections.js'
 
 export default function EntryModal({ brick, onSave, onClose }) {
   const [inscription, setInscription] = useState(brick.inscription || '')
@@ -87,7 +88,7 @@ export default function EntryModal({ brick, onSave, onClose }) {
         <input
           type="text"
           value={inscription}
-          onChange={e => setInscription(e.target.value.toUpperCase())}
+          onChange={e => setInscription(correctOCR(e.target.value))}
           placeholder="Name on paver..."
           autoCapitalize="characters"
           autoCorrect="off"
