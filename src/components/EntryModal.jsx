@@ -33,7 +33,26 @@ export default function EntryModal({ brick, onSave, onClose }) {
     if (!validate()) return
     setSaving(true)
     try {
-      await onSave({ ...brick, inscription, style, size })
+      let lat = '', lng = ''
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true, timeout: 8000, maximumAge: 0
+          })
+        })
+        lat = pos.coords.latitude.toFixed(6)
+        lng = pos.coords.longitude.toFixed(6)
+      } catch {
+        // GPS unavailable — save without coordinates
+      }
+
+      await onSave({
+        ...brick,
+        inscription,
+        style,
+        size,
+        location: lat && lng ? `${lat},${lng}` : ''
+      })
     } catch (err) {
       setErrors([err.message])
       setSaving(false)
@@ -159,7 +178,7 @@ export default function EntryModal({ brick, onSave, onClose }) {
             marginBottom: '12px'
           }}
         >
-          {saving ? 'Saving...' : 'CONFIRM & SAVE'}
+          {saving ? '📡 Getting GPS & Saving...' : 'CONFIRM & SAVE'}
         </button>
 
         <button
