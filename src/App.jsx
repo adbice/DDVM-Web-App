@@ -4,6 +4,7 @@ import BrickCard from './components/BrickCard.jsx'
 import EntryModal from './components/EntryModal.jsx'
 import SectionMap from './components/SectionMap.jsx'
 import CalibrationPanel from './components/CalibrationPanel.jsx'
+import LiveMap from './components/LiveMap.jsx'
 import { getAllBricks, savePaver, signIn, isSignedIn } from './services/SheetsService.js'
 
 export default function App() {
@@ -81,14 +82,9 @@ export default function App() {
   if (!authed) {
     return (
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        gap: '24px',
-        padding: '40px',
-        background: '#1A1A1A'
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', minHeight: '100vh',
+        gap: '24px', padding: '40px', background: '#1A1A1A'
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🪖</div>
@@ -102,16 +98,9 @@ export default function App() {
         <button
           onClick={handleSignIn}
           style={{
-            background: '#D4A843',
-            color: '#1A1A1A',
-            border: 'none',
-            borderRadius: '16px',
-            padding: '20px 40px',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            width: '100%',
-            maxWidth: '320px'
+            background: '#D4A843', color: '#1A1A1A', border: 'none',
+            borderRadius: '16px', padding: '20px 40px', fontSize: '1.2rem',
+            fontWeight: 'bold', cursor: 'pointer', width: '100%', maxWidth: '320px'
           }}
         >
           Sign in with Google
@@ -135,14 +124,12 @@ export default function App() {
       />
 
       <div style={{
-        display: 'flex',
-        gap: '8px',
-        padding: '12px 16px',
-        borderBottom: '1px solid #2C2C2C',
-        alignItems: 'center'
+        display: 'flex', gap: '8px', padding: '12px 16px',
+        borderBottom: '1px solid #2C2C2C', alignItems: 'center'
       }}>
         <ViewToggleBtn label="☰ List" active={viewMode === 'list'} onClick={() => setViewMode('list')} />
         <ViewToggleBtn label="⊞ Map"  active={viewMode === 'map'}  onClick={() => setViewMode('map')} />
+        <ViewToggleBtn label="📍 Live" active={viewMode === 'live'} onClick={() => setViewMode('live')} />
         <div style={{ flex: 1 }} />
         <button onClick={loadInventory} style={actionBtnStyle}>↻ Refresh</button>
         <button onClick={() => setShowCalibration(true)} style={actionBtnStyle}>📍 Calibrate</button>
@@ -166,15 +153,9 @@ export default function App() {
                   setModalOpen(true)
                 }}
                 style={{
-                  width: '100%',
-                  padding: '24px',
-                  background: '#D4A843',
-                  color: '#1A1A1A',
-                  border: 'none',
-                  borderRadius: '16px',
-                  fontSize: '1.2rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
+                  width: '100%', padding: '24px', background: '#D4A843',
+                  color: '#1A1A1A', border: 'none', borderRadius: '16px',
+                  fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer'
                 }}
               >
                 ➕ CREATE NEW: {searchQuery.toUpperCase()}
@@ -210,6 +191,10 @@ export default function App() {
           inventory={inventory}
           onPaverTap={handleCardTap}
         />
+      )}
+
+      {viewMode === 'live' && (
+        <LiveMap inventory={inventory} />
       )}
 
       {modalOpen && (
