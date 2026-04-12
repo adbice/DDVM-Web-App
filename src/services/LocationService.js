@@ -2,17 +2,14 @@
  * LocationService.js
  * DDVM Monument Mapper — David Dewett Veterans Memorial, Coos Bay OR
  *
- * Layout (left to right, 101 side at bottom, bay at top):
- *   Sec6 | Sec4 | Sec2 | walkway | Sec1 | Sec3 | Sec5   (101 side)
- *   Sec6 |←—— Sec7 ——→|←—— Sec8 ——→| Sec5              (bay side)
+ * Monument is two rectangular wings meeting at center walkway entrance.
+ * Wings run at ~326° bearing (NW-SE orientation), 10° wall angle.
  *
- * Coordinates derived from:
+ * All polygon coordinates derived from:
  *   - Real GPS corner pins (4 monument corners + walkway corners)
- *   - Physical tape measurements:
- *     Sec4: 28'5" x 7'10 3/8", Sec2: 14'4.5", Sec1: 14'5" x 7'10 3/8"
- *     Sec3: 10'5.25", Sec7&8: 2'11.75" wide x 34' long
- *     Sec6&5: 4 rows (bay) / 10 rows (101) x 8" pavers
- *     Walkway: 4' at 101, opens to 10' at bay
+ *   - Physical measurements + bearing angles calculated from GPS corners
+ *   - Monument bearing: 326.0° along 101 side
+ *   - Left wall bearing: 217.3°, Right wall bearing: 235.4°
  */
 
 const REFERENCE_ANCHORS = {
@@ -24,8 +21,6 @@ const REFERENCE_ANCHORS = {
   L_WALKWAY_MEMORIAL: { lat: 43.450501, lng: -124.225602, label: "Left Walkway Memorial" },
   R_WALKWAY_101:      { lat: 43.450533, lng: -124.225615, label: "Right Walkway 101" },
   R_WALKWAY_MEMORIAL: { lat: 43.450530, lng: -124.225634, label: "Right Walkway Memorial" },
-  CENTER_BAY_101:     { lat: 43.450430, lng: -124.225544, label: "Center Bay 101 side" },
-  CENTER_BAY:         { lat: 43.450489, lng: -124.225658, label: "Center Bay" },
   POW_FRONT:          { lat: 43.450365, lng: -124.225333, label: "POW/MIA Front" },
 }
 
@@ -35,54 +30,54 @@ const DEFAULT_POLYGONS = {
     label: "Section 6 — Left Side Wall",
     style: "Brick",
     vertices: [
-      [43.450444, -124.225528],  // Left corner 101 (SW)
-      [43.450456, -124.225539],  // Sec6/Sec4 boundary 101
-      [43.450445, -124.225606],  // Sec6/Sec7 boundary bay
-      [43.450404, -124.225570],  // Left bay (NW)
+      [43.450444, -124.225528],
+      [43.450459, -124.225542],
+      [43.450453, -124.225548],
+      [43.450438, -124.225534],
     ]
   },
 
   "Section 4": {
-    label: "Section 4 — 101 Side",
+    label: "Section 4 — Left Wing",
     style: "Brick",
     vertices: [
-      [43.450456, -124.225539],  // Sec6/Sec4 101
-      [43.450508, -124.225588],  // Sec4/Sec2 101
-      [43.450491, -124.225610],  // Sec4/Sec2 bay edge
-      [43.450439, -124.225557],  // Sec6/Sec4 bay edge
+      [43.450459, -124.225542],
+      [43.450524, -124.225602],
+      [43.450507, -124.225620],
+      [43.450442, -124.225560],
     ]
   },
 
   "Section 2": {
-    label: "Section 2 — 101 Side",
+    label: "Section 2 — Left Wing",
     style: "Brick",
     vertices: [
-      [43.450508, -124.225588],  // Sec4/Sec2 101
-      [43.450530, -124.225572],  // Left walkway 101
-      [43.450519, -124.225635],  // Left walkway bay edge
-      [43.450494, -124.225607],  // Sec4/Sec2 bay edge
+      [43.450524, -124.225602],
+      [43.450557, -124.225632],
+      [43.450540, -124.225650],
+      [43.450507, -124.225620],
     ]
   },
 
   "Section 1": {
-    label: "Section 1 — 101 Side Right of Walkway",
+    label: "Section 1 — Right Wing",
     style: "Brick",
     vertices: [
-      [43.450533, -124.225615],  // Right walkway 101
-      [43.450569, -124.225644],  // Sec1/Sec3 101
-      [43.450555, -124.225668],  // Sec1/Sec3 bay edge
-      [43.450529, -124.225639],  // Right walkway bay edge
+      [43.450561, -124.225637],
+      [43.450528, -124.225607],
+      [43.450516, -124.225631],
+      [43.450549, -124.225661],
     ]
   },
 
   "Section 3": {
-    label: "Section 3 — 101 Side",
+    label: "Section 3 — Right Wing",
     style: "Brick",
     vertices: [
-      [43.450569, -124.225644],  // Sec1/Sec3 101
-      [43.450588, -124.225662],  // Sec3/Sec5 101
-      [43.450575, -124.225686],  // Sec3/Sec5 bay edge
-      [43.450557, -124.225664],  // Sec1/Sec3 bay edge
+      [43.450585, -124.225659],
+      [43.450561, -124.225637],
+      [43.450549, -124.225661],
+      [43.450573, -124.225683],
     ]
   },
 
@@ -90,10 +85,10 @@ const DEFAULT_POLYGONS = {
     label: "Section 5 — Right Side Wall",
     style: "Brick",
     vertices: [
-      [43.450588, -124.225662],  // Sec3/Sec5 101
-      [43.450600, -124.225673],  // Right corner 101 (SE)
-      [43.450576, -124.225721],  // Right bay (NE)
-      [43.450535, -124.225685],  // Sec8/Sec5 boundary bay
+      [43.450600, -124.225673],
+      [43.450585, -124.225659],
+      [43.450581, -124.225667],
+      [43.450596, -124.225681],
     ]
   },
 
@@ -101,10 +96,10 @@ const DEFAULT_POLYGONS = {
     label: "Section 7 — Bay Side Left",
     style: "Black",
     vertices: [
-      [43.450444, -124.225528],  // Left corner 101 (SW)
-      [43.450530, -124.225572],  // Left walkway 101
-      [43.450490, -124.225645],  // Sec7/Sec8 center bay
-      [43.450445, -124.225606],  // Sec6/Sec7 boundary bay
+      [43.450404, -124.225570],
+      [43.450481, -124.225642],
+      [43.450487, -124.225635],
+      [43.450410, -124.225563],
     ]
   },
 
@@ -112,10 +107,10 @@ const DEFAULT_POLYGONS = {
     label: "Section 8 — Bay Side Right",
     style: "Black",
     vertices: [
-      [43.450533, -124.225615],  // Right walkway 101
-      [43.450600, -124.225673],  // Right corner 101 (SE)
-      [43.450535, -124.225685],  // Sec8/Sec5 boundary bay
-      [43.450490, -124.225645],  // Sec7/Sec8 center bay
+      [43.450576, -124.225721],
+      [43.450499, -124.225649],
+      [43.450504, -124.225640],
+      [43.450581, -124.225712],
     ]
   },
 
