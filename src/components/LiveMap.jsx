@@ -13,7 +13,8 @@ function gpsToCanvas(lat, lng, bounds, canvasW, canvasH) {
 function getBounds() {
   let minLat = Infinity, maxLat = -Infinity
   let minLng = Infinity, maxLng = -Infinity
-  Object.values(SECTIONS).forEach(sec => {
+  Object.entries(SECTIONS).forEach(([name, sec]) => {
+    if (name === 'POW/MIA Section') return  // exclude from bounds
     sec.vertices.forEach(([lat, lng]) => {
       if (lat < minLat) minLat = lat
       if (lat > maxLat) maxLat = lat
@@ -21,6 +22,11 @@ function getBounds() {
       if (lng > maxLng) maxLng = lng
     })
   })
+  const latPad = (maxLat - minLat) * 0.15
+  const lngPad = (maxLng - minLng) * 0.15
+  return { minLat: minLat - latPad, maxLat: maxLat + latPad,
+           minLng: minLng - lngPad, maxLng: maxLng + lngPad }
+}
   // Add padding
   const latPad = (maxLat - minLat) * 0.15
   const lngPad = (maxLng - minLng) * 0.15
