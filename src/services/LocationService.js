@@ -2,131 +2,163 @@
  * LocationService.js
  * DDVM Monument Mapper — David Dewett Veterans Memorial, Coos Bay OR
  *
- * Monument is two rectangular wings meeting at center walkway entrance.
- * Wings run at ~326° bearing (NW-SE orientation), 10° wall angle.
+ * All section polygons derived from 7 verified GPS anchor points captured
+ * via Google Maps satellite imagery, with section boundaries computed using
+ * physical tape measurements and wall bearing angles.
  *
- * All polygon coordinates derived from:
- *   - Real GPS corner pins (4 monument corners + walkway corners)
- *   - Physical measurements + bearing angles calculated from GPS corners
- *   - Monument bearing: 326.0° along 101 side
- *   - Left wall bearing: 217.3°, Right wall bearing: 235.4°
+ * GPS Anchors (ground truth):
+ *   SW  = [43.450436, -124.225491]  Left corner, 101 side
+ *   LW  = [43.450486, -124.225574]  Left walkway edge, 101 side
+ *   RW  = [43.450508, -124.225598]  Right walkway edge, 101 side
+ *   SE  = [43.450582, -124.225651]  Right corner, 101 side
+ *   NW  = [43.450407, -124.225530]  Left corner, bay side
+ *   CB  = [43.450470, -124.225633]  Center bay (splits S7/S8)
+ *   NE  = [43.450562, -124.225697]  Right corner, bay side
+ *
+ * Monument geometry:
+ *   101 face bearing:  321.5°
+ *   Left wall bearing: 224.3°  (SW → NW)
+ *   Right wall bearing: 239.1° (SE → NE)
+ *   Bay face bearing:  322.0°  (NW → NE)
+ *   Wall angle: 10° (angled wings per blueprint)
+ *
+ * Layout (left → right, standing on 101 side facing bay):
+ *   101 side: S6 border | S4 | S2 | walkway | S1 | S3 | S5 border
+ *   Bay side: S7 (left half) | S8 (right half)
+ *   S5/S6 are trapezoidal side borders connecting 101 to bay
+ *   S7/S8 are the bay-side rows (~35" wide), separated from 101 sections by pedestals
+ *   POW/MIA is a separate area with its own independently verified vertices
  */
 
-const REFERENCE_ANCHORS = {
-  LEFT_CORNER_101:    { lat: 43.450444, lng: -124.225528, label: "Left Corner 101 (SW)" },
-  LEFT_BAY:           { lat: 43.450404, lng: -124.225570, label: "Left Bay (NW)" },
-  RIGHT_CORNER_101:   { lat: 43.450600, lng: -124.225673, label: "Right Corner 101 (SE)" },
-  RIGHT_BAY:          { lat: 43.450576, lng: -124.225721, label: "Right Bay (NE)" },
-  L_WALKWAY_101:      { lat: 43.450530, lng: -124.225572, label: "Left Walkway 101" },
-  L_WALKWAY_MEMORIAL: { lat: 43.450501, lng: -124.225602, label: "Left Walkway Memorial" },
-  R_WALKWAY_101:      { lat: 43.450533, lng: -124.225615, label: "Right Walkway 101" },
-  R_WALKWAY_MEMORIAL: { lat: 43.450530, lng: -124.225634, label: "Right Walkway Memorial" },
-  POW_FRONT:          { lat: 43.450365, lng: -124.225333, label: "POW/MIA Front" },
-}
-
+// ---------------------------------------------------------------------------
+// SECTION POLYGONS
+// Each polygon is [lat, lng] vertices in clockwise order:
+// [101-left, 101-right, bay-right, bay-left]
+// ---------------------------------------------------------------------------
 const DEFAULT_POLYGONS = {
 
   "Section 6": {
-    label: "Section 6 — Left Side Wall",
+    label: "Section 6 — Left Side Border",
     style: "Brick",
+    // Trapezoidal: 80" wide at 101 side, 32" wide at bay side
     vertices: [
-      [43.450444, -124.225528],
-      [43.450459, -124.225542],
-      [43.450453, -124.225548],
-      [43.450438, -124.225534],
+      [43.450436, -124.225491], // SW corner 101
+      [43.450448, -124.225510], // S6 right edge 101
+      [43.450413, -124.225536], // S6 right edge bay
+      [43.450407, -124.225530], // NW corner bay
     ]
   },
 
   "Section 4": {
-    label: "Section 4 — Left Wing",
+    label: "Section 4 — Left Wing (outer)",
     style: "Brick",
     vertices: [
-      [43.450459, -124.225542],
-      [43.450524, -124.225602],
-      [43.450507, -124.225620],
-      [43.450442, -124.225560],
+      [43.450448, -124.225510], // S4 left 101
+      [43.450473, -124.225553], // S4 right 101
+      [43.450447, -124.225594], // S4 right bay
+      [43.450420, -124.225550], // S4 left bay
     ]
   },
 
   "Section 2": {
-    label: "Section 2 — Left Wing",
+    label: "Section 2 — Left Wing (inner)",
     style: "Brick",
     vertices: [
-      [43.450524, -124.225602],
-      [43.450557, -124.225632],
-      [43.450540, -124.225650],
-      [43.450507, -124.225620],
+      [43.450473, -124.225553], // S2 left 101
+      [43.450486, -124.225574], // S2 right 101 (left walkway edge)
+      [43.450461, -124.225616], // S2 right bay
+      [43.450447, -124.225594], // S2 left bay
     ]
   },
 
   "Section 1": {
-    label: "Section 1 — Right Wing",
+    label: "Section 1 — Right Wing (inner)",
     style: "Brick",
     vertices: [
-      [43.450561, -124.225637],
-      [43.450528, -124.225607],
-      [43.450516, -124.225631],
-      [43.450549, -124.225661],
+      [43.450508, -124.225598], // S1 left 101 (right walkway edge)
+      [43.450542, -124.225622], // S1 right 101
+      [43.450519, -124.225667], // S1 right bay
+      [43.450484, -124.225641], // S1 left bay
     ]
   },
 
   "Section 3": {
-    label: "Section 3 — Right Wing",
+    label: "Section 3 — Right Wing (outer)",
     style: "Brick",
     vertices: [
-      [43.450585, -124.225659],
-      [43.450561, -124.225637],
-      [43.450549, -124.225661],
-      [43.450573, -124.225683],
+      [43.450542, -124.225622], // S3 left 101
+      [43.450566, -124.225639], // S3 right 101
+      [43.450545, -124.225685], // S3 right bay
+      [43.450519, -124.225667], // S3 left bay
     ]
   },
 
   "Section 5": {
-    label: "Section 5 — Right Side Wall",
+    label: "Section 5 — Right Side Border",
     style: "Brick",
+    // Trapezoidal: 80" wide at 101 side, 32" wide at bay side
     vertices: [
-      [43.450600, -124.225673],
-      [43.450585, -124.225659],
-      [43.450581, -124.225667],
-      [43.450596, -124.225681],
+      [43.450566, -124.225639], // S5 left 101
+      [43.450582, -124.225651], // SE corner 101
+      [43.450562, -124.225697], // NE corner bay
+      [43.450556, -124.225691], // S5 left bay
     ]
   },
 
   "Section 7": {
     label: "Section 7 — Bay Side Left",
     style: "Black",
+    // ~35" deep strip along bay wall, left half (NW to center bay)
     vertices: [
-      [43.450404, -124.225570],
-      [43.450481, -124.225642],
-      [43.450487, -124.225635],
-      [43.450410, -124.225563],
+      [43.450407, -124.225530], // NW corner (outer bay)
+      [43.450470, -124.225633], // Center bay (outer)
+      [43.450475, -124.225624], // Center bay (inner, toward 101)
+      [43.450413, -124.225522], // NW inner (toward 101)
     ]
   },
 
   "Section 8": {
     label: "Section 8 — Bay Side Right",
     style: "Black",
+    // ~35" deep strip along bay wall, right half (center bay to NE)
     vertices: [
-      [43.450576, -124.225721],
-      [43.450499, -124.225649],
-      [43.450504, -124.225640],
-      [43.450581, -124.225712],
+      [43.450470, -124.225633], // Center bay (outer)
+      [43.450562, -124.225697], // NE corner (outer bay)
+      [43.450566, -124.225687], // NE inner (toward 101)
+      [43.450475, -124.225624], // Center bay (inner, toward 101)
     ]
   },
 
   "POW/MIA Section": {
     label: "POW/MIA Section",
     style: "Black",
+    // Separately verified GPS vertices — independent of main monument
     vertices: [
       [43.450411, -124.225439],
       [43.450474, -124.225564],
       [43.450476, -124.225550],
       [43.450365, -124.225333],
     ]
-  }
+  },
 }
 
-const STORAGE_KEY = 'ddvm_calibrated_polygons'
+// ---------------------------------------------------------------------------
+// REFERENCE ANCHORS (for calibration UI)
+// ---------------------------------------------------------------------------
+const REFERENCE_ANCHORS = {
+  SW:  { lat: 43.450436, lng: -124.225491, label: "SW — Left Corner 101" },
+  NW:  { lat: 43.450407, lng: -124.225530, label: "NW — Left Corner Bay" },
+  SE:  { lat: 43.450582, lng: -124.225651, label: "SE — Right Corner 101" },
+  NE:  { lat: 43.450562, lng: -124.225697, label: "NE — Right Corner Bay" },
+  LW:  { lat: 43.450486, lng: -124.225574, label: "Left Walkway Edge (101)" },
+  RW:  { lat: 43.450508, lng: -124.225598, label: "Right Walkway Edge (101)" },
+  CB:  { lat: 43.450470, lng: -124.225633, label: "Center Bay (S7/S8 split)" },
+}
+
+// ---------------------------------------------------------------------------
+// STORAGE
+// ---------------------------------------------------------------------------
+const STORAGE_KEY        = 'ddvm_calibrated_polygons'
 const ANCHOR_STORAGE_KEY = 'ddvm_calibrated_anchors'
 
 function loadPolygons() {
@@ -167,6 +199,9 @@ function saveCalibratedAnchors(anchors) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// GEOMETRY HELPERS
+// ---------------------------------------------------------------------------
 function pointInPolygon(point, polygon) {
   const [px, py] = point
   let inside = false
@@ -194,6 +229,9 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+// ---------------------------------------------------------------------------
+// LOCATION SERVICE
+// ---------------------------------------------------------------------------
 const LocationService = {
 
   async getCurrentPosition() {
@@ -239,14 +277,14 @@ const LocationService = {
     for (const [name, config] of Object.entries(polygons)) {
       const centLat = config.vertices.reduce((s, v) => s + v[0], 0) / config.vertices.length
       const centLng = config.vertices.reduce((s, v) => s + v[1], 0) / config.vertices.length
-      const dist = haversineDistance(lat, lng, centLat, centLng)
-      if (dist < minDist) {
-        minDist = dist
+      const d = haversineDistance(lat, lng, centLat, centLng)
+      if (d < minDist) {
+        minDist = d
         closest = {
           section: name,
           label: config.label,
           style: config.style,
-          distanceMeters: Math.round(dist)
+          distanceMeters: Math.round(d)
         }
       }
     }
